@@ -1,3 +1,4 @@
+/** Página provisional para módulos que todavía no se implementaron. */
 export default function Placeholder({ title }: { title: string }) {
   return (
     <>

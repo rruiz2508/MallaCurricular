@@ -1,3 +1,9 @@
+/*
+ * Estilos globales. Los colores y medidas se definen como variables en :root para
+ * poder cambiar la apariencia (p. ej. acercar el azul al de la institución) en un solo
+ * lugar. Secciones: variables y modo oscuro, layout (menú + cabecera), tiles,
+ * tarjetas/formularios/tablas, login y adaptación a móvil.
+ */
 :root {
   --sidebar: #0d4f7a;
   --sidebar-active: #0a3d60;

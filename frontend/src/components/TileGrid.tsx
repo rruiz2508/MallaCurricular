@@ -1,3 +1,7 @@
+/**
+ * Cuadrícula de accesos (tiles) celestes con borde dorado, como en las pantallas de
+ * módulos. Recibe ya filtrados los tiles que el usuario puede ver.
+ */
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 

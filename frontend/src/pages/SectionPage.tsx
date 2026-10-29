@@ -1,3 +1,4 @@
+/** Página de una sección (Académico, Seguridad, Reportes): muestra sus módulos permitidos. */
 import { useAuth } from "../auth/AuthContext";
 import TileGrid from "../components/TileGrid";
 import type { Section } from "../modules";
