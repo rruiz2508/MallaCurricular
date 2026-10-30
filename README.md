@@ -47,21 +47,6 @@ El sistema centraliza y ordena la información académica relacionada con facult
 - Docentes (consulta)
 - Estudiantes (consulta de la malla vigente, si se habilita acceso público)
 
-## Estado del proyecto
-
-| Área | Estado |
-|---|---|
-| Base de datos: seguridad (usuarios, roles, permisos y RLS) | ✅ Completa |
-| Base de datos: estructura académica (facultades, carreras, asignaturas) | ✅ Completa |
-| Base de datos: mallas versionadas, promociones, equivalencias y relaciones | ✅ Completa |
-| API de sesión (`/me`) y facultades | ✅ Implementada |
-| API y pantallas de seguridad: usuarios, roles y asignación de permisos | ✅ Implementadas |
-| Frontend: login, navegación por permisos, facultades, usuarios y roles | ✅ Implementado |
-| API y pantallas (ABM) de carreras, asignaturas, equivalencias, mallas con prerrequisitos y versionado, y promociones | ✅ Implementadas |
-| Reportes (malla por carrera y vigencia de promociones) | ⏳ Pendiente (la vista `v_reporte_promocion` ya entrega los datos) |
-
-El módulo de **facultades** es el de referencia: sirve como patrón para el resto (esquemas Pydantic, consultas SQL parametrizadas, permisos por endpoint y formulario modal en el frontend).
-
 ## Tecnologías
 
 | Área | Tecnología |
@@ -83,23 +68,26 @@ El módulo de **facultades** es el de referencia: sirve como patrón para el res
 - **Backend:** concentra las reglas de negocio, la autorización y la persistencia.
 - **Base de datos:** organiza la información por contextos (`seguridad` y `academico`).
 - **Seguridad:** la autorización se valida en el backend; las políticas RLS son un control complementario.
+- **Módulo de referencia:** `facultades` (esquemas Pydantic, consultas SQL parametrizadas, permisos por endpoint y formulario modal en el frontend) es el patrón que siguen los demás módulos.
 
 ```text
 backend/
   app/
     api/v1/            # endpoints (/me, /facultades, /carreras, /asignaturas, /equivalencias,
                        #            /mallas, /promociones, /usuarios, /roles, /permisos)
-    core/              # configuración, conexión y validación de JWT
+    core/              # configuración, conexión, validación de JWT y cliente de la Admin API de Supabase
   tests/               # pruebas de API, JWT y esquemas
 frontend/
   src/
     auth/              # sesión de Supabase y perfil/permisos
-    components/        # layout y cuadrícula de módulos
-    lib/               # cliente HTTP y cliente de Supabase
+    components/        # layout, tarjetas de módulos y modal reutilizable
+    lib/               # cliente HTTP y de Supabase, tema claro/oscuro, hook de carga y tipos de la API
     pages/             # Login, Inicio, secciones y un módulo por pantalla (ABM)
     modules.ts         # catálogo de módulos filtrado por permisos
-supabase/migrations/   # migraciones SQL versionadas
-Docs/                  # acta de constitución
+supabase/
+  migrations/          # migraciones SQL versionadas
+  seed/                # datos de prueba (LCI-SI, promoción 2023)
+Docs/                  # acta de constitución, guía de interfaz y currículum de referencia
 ```
 
 ## Puesta en marcha
@@ -157,7 +145,11 @@ join seguridad.rol r on r.nombre = 'administrador'
 where u.email = 'correo@ejemplo.com';
 ```
 
-### 4. Frontend
+### 4. Datos de prueba (opcional)
+
+`supabase/seed/lci_si_promocion_2023.sql` carga la Licenciatura en Ciencias Informáticas con Énfasis en Sistemas Informáticos (LCI-SI): 41 asignaturas, su malla de 8 semestres con 30 prerrequisitos (publicada) y la promoción 2023, tomadas de `Docs/Curriculum_Propuesto_2023 - LCI-SI_Ruiz_Robert.pdf`. Requiere las migraciones aplicadas y la facultad "Facultad de Ciencias y Tecnología" ya creada, y se ejecuta una sola vez desde el SQL Editor. La actividad "Participación en congresos y seminarios" se registra con el código `COMP-001` porque el PDF no trae uno.
+
+### 5. Frontend
 
 ```bash
 cd frontend
@@ -213,6 +205,15 @@ Todas las rutas de negocio cuelgan de `/api/v1` y requieren `Authorization: Bear
 | PATCH | `/api/v1/usuarios/{id}` | `usuarios.gestionar` | Edita datos, estado o roles; 409 si dejaría al sistema sin administradores activos. |
 | PUT | `/api/v1/usuarios/{id}/password` | `usuarios.gestionar` | Establece una nueva contraseña. |
 
+## Ciclo de vida de una malla
+
+- Cada carrera puede tener varias **versiones** de su malla (numeración automática). Una versión nace como **borrador**, se arma por semestres (con tipo de materia y prerrequisitos), se **publica** y, cuando se reemplaza, se **archiva**.
+- Solo un borrador se modifica o se elimina. Para cambiar una malla publicada se crea una **nueva versión** (copia en borrador de asignaturas y prerrequisitos).
+- Un prerrequisito debe estar en un semestre anterior; el semestre no puede superar la duración de la malla; no se publica una malla vacía. Estas reglas viven en la base (triggers) y la API las informa como errores 409/422.
+- Las actividades complementarias y el trabajo final se registran **sin semestre**.
+- Una **promoción** (cohorte de ingreso) se asocia a una malla publicada de su carrera; su vigencia es el año de ingreso + la duración de la malla + los años de gracia.
+- Los créditos no se guardan: se calculan como horas ÷ `horas_por_credito` de la malla (15 por defecto), igual que en el currículum de referencia.
+
 ## Modelo de permisos
 
 - El JWT de Supabase se valida con las claves públicas del proyecto (JWKS), así que el backend no guarda secretos.
@@ -251,4 +252,7 @@ El backend tiene pruebas de API, de validación de JWT y de los esquemas de entr
 ## Documentación
 
 - [Acta de constitución del proyecto](Docs/Acta_Constitucion_Gestion_Malla_Curricular.pdf)
-- Migraciones SQL: `supabase/migrations/`
+- [Guía de rediseño de interfaz](Docs/guia_ui.md): paleta, modo claro/oscuro y componentes.
+- [Currículum propuesto 2023 de LCI-SI](<Docs/Curriculum_Propuesto_2023 - LCI-SI_Ruiz_Robert.pdf>): reporte de referencia que la estructura de datos debe poder producir.
+- Migraciones SQL: `supabase/migrations/`; datos de prueba: `supabase/seed/`.
+- Documentación interactiva de la API: `/docs` (Swagger) con el backend en marcha.
