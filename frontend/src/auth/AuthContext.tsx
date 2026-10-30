@@ -36,6 +36,8 @@ interface AuthState {
   meError: string | null;
   /** Indica si el usuario actual tiene el permiso dado. */
   can: (permiso: string) => boolean;
+  /** Vuelve a pedir el perfil al backend (p. ej. tras un error de red). */
+  refresh: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -46,15 +48,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [meError, setMeError] = useState<string | null>(null);
+  // Se incrementa para forzar una nueva carga del perfil (botón "Reintentar").
+  const [reload, setReload] = useState(0);
 
   // Paso 1: obtener la sesión inicial (guardada por Supabase en el navegador) y
   // suscribirse a sus cambios (login, logout, renovación del token).
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      // Sin sesión no hay perfil que cargar: terminamos de "cargar" aquí.
-      if (!data.session) setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        // Sin sesión no hay perfil que cargar: terminamos de "cargar" aquí.
+        if (!data.session) setLoading(false);
+      })
+      // Si no se puede leer la sesión guardada se muestra el login en lugar de dejar
+      // la aplicación cargando indefinidamente.
+      .catch(() => setLoading(false));
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
       if (!next) {
@@ -92,8 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, reload]);
 
+  const refresh = useCallback(() => setReload((n) => n + 1), []);
   const can = useCallback((permiso: string) => me?.permisos.includes(permiso) ?? false, [me]);
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -102,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // useMemo: el objeto del contexto solo cambia cuando cambia algún dato, para no
   // volver a renderizar a todos los consumidores sin necesidad.
   const value = useMemo(
-    () => ({ loading, session, me, meError, can, signOut }),
-    [loading, session, me, meError, can, signOut],
+    () => ({ loading, session, me, meError, can, refresh, signOut }),
+    [loading, session, me, meError, can, refresh, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

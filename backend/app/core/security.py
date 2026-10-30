@@ -52,9 +52,16 @@ def _jwks_client() -> jwt.PyJWKClient:
     """Cliente de claves públicas de Supabase.
 
     Se crea una sola vez (lru_cache) para reutilizar su caché interna y no descargar
-    el JWKS en cada petición.
+    el JWKS en cada petición. Si falta ``SUPABASE_URL`` se responde 503 (igual que
+    ``db.py`` cuando falta ``DATABASE_URL``) en lugar de fallar con un 500.
     """
-    return jwt.PyJWKClient(get_settings().jwks_url, cache_keys=True)
+    settings = get_settings()
+    if not settings.supabase_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="SUPABASE_URL no está configurada",
+        )
+    return jwt.PyJWKClient(settings.jwks_url, cache_keys=True)
 
 
 def _unauthorized(detail: str) -> HTTPException:
@@ -83,6 +90,9 @@ def _decode_token(token: str) -> dict[str, object]:
             algorithms=["ES256", "RS256"],
             audience="authenticated",
             issuer=settings.jwt_issuer,
+            # Sin estas reclamaciones el token no identifica a un usuario válido ni
+            # caduca, así que no debe aceptarse.
+            options={"require": ["exp", "sub"]},
         )
     except jwt.PyJWTError as exc:
         raise _unauthorized("Token inválido o vencido") from exc
@@ -112,7 +122,12 @@ async def get_current_user(
     Falla con 401 si no hay token o es inválido, y con 403 si el usuario no existe en
     ``seguridad.usuario`` o está desactivado.
     """
-    user_id = UUID(str(claims["sub"]))
+    # Un token firmado pero con un "sub" que no es UUID se rechaza como 401: sin esta
+    # conversión controlada, ``UUID()`` lanzaría ValueError y la API respondería 500.
+    try:
+        user_id = UUID(str(claims.get("sub")))
+    except (TypeError, ValueError) as exc:
+        raise _unauthorized("Token sin identificador de usuario válido") from exc
 
     # Perfil del usuario (la fila la crea un trigger al darlo de alta en Supabase Auth).
     row = (
@@ -121,7 +136,12 @@ async def get_current_user(
             {"id": user_id},
         )
     ).first()
-    if row is None or not row.activo:
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El usuario no está registrado en el sistema",
+        )
+    if not row.activo:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
     # Roles activos del usuario y los permisos de cada uno. Los left join permiten que un

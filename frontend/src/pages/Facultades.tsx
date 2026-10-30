@@ -50,6 +50,12 @@ export default function Facultades() {
     void load();
   }, [load]);
 
+  /** Abre el modal limpiando el error de un intento de guardado anterior. */
+  function open(next: Draft) {
+    setFormError(null);
+    setDraft(next);
+  }
+
   /** Guarda el formulario: PATCH si es edición, POST si es alta; luego recarga la tabla. */
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -78,7 +84,7 @@ export default function Facultades() {
         {canManage && (
           <button
             className="btn primary"
-            onClick={() => setDraft({ codigo: "", nombre: "", activo: true })}
+            onClick={() => open({ codigo: "", nombre: "", activo: true })}
           >
             <Plus size={16} /> Nueva facultad
           </button>
@@ -114,7 +120,7 @@ export default function Facultades() {
                       <button
                         className="icon-btn"
                         aria-label="Editar"
-                        onClick={() => setDraft({ ...f })}
+                        onClick={() => open({ ...f })}
                       >
                         <Pencil size={16} />
                       </button>

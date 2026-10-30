@@ -20,10 +20,16 @@ export default function Login() {
     event.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    // Mensaje genérico a propósito: no revela si el correo existe o no.
-    if (error) setError("Correo o contraseña incorrectos");
-    setBusy(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      // Mensaje genérico a propósito: no revela si el correo existe o no.
+      if (error) setError("Correo o contraseña incorrectos");
+    } catch {
+      // Fallo de red o de configuración: sin este catch el botón quedaría bloqueado.
+      setError("No se pudo conectar con el servidor de autenticación");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

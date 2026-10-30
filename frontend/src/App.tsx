@@ -19,7 +19,7 @@ import SectionPage from "./pages/SectionPage";
 import { sections } from "./modules";
 
 export default function App() {
-  const { loading, session, me, meError } = useAuth();
+  const { loading, session, me, meError, refresh, signOut } = useAuth();
 
   if (loading) return <div className="center-screen">Cargando…</div>;
   if (!session) return <Login />;
@@ -29,6 +29,16 @@ export default function App() {
         <div className="card">
           <h2>No se pudo cargar tu perfil</h2>
           <p className="muted">{meError ?? "Error desconocido"}</p>
+          {/* Sin estas acciones el usuario queda atrapado: la sesión sigue guardada
+              en el navegador, así que no vería el login para volver a intentarlo. */}
+          <div className="modal-actions">
+            <button className="btn" onClick={signOut}>
+              Cerrar sesión
+            </button>
+            <button className="btn primary" onClick={refresh}>
+              Reintentar
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -8,7 +8,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -22,7 +22,17 @@ router = APIRouter(prefix="/facultades", tags=["facultades"])
 Conn = Annotated[AsyncConnection, Depends(get_connection)]
 
 
-class FacultadIn(BaseModel):
+class _Entrada(BaseModel):
+    """Base de los esquemas de entrada.
+
+    ``str_strip_whitespace`` recorta los textos antes de validar, de modo que un
+    código o nombre con solo espacios no pase la restricción de longitud mínima.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+
+class FacultadIn(_Entrada):
     """Datos para crear una facultad."""
 
     codigo: str = Field(min_length=1, max_length=30)
@@ -30,13 +40,24 @@ class FacultadIn(BaseModel):
     activo: bool = True
 
 
-class FacultadUpdate(BaseModel):
+class FacultadUpdate(_Entrada):
     """Datos para editar una facultad. Todos son opcionales: solo se actualizan los
     campos que el cliente envía (actualización parcial, PATCH)."""
 
     codigo: str | None = Field(default=None, min_length=1, max_length=30)
     nombre: str | None = Field(default=None, min_length=1, max_length=200)
     activo: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def rechazar_nulos(cls, data: object) -> object:
+        """Un campo enviado como ``null`` no se puede guardar (las columnas son NOT
+        NULL) y tampoco debe ignorarse en silencio: se rechaza con 422."""
+        if isinstance(data, dict):
+            nulos = sorted(str(campo) for campo, valor in data.items() if valor is None)
+            if nulos:
+                raise ValueError(f"Los campos no admiten null: {', '.join(nulos)}")
+        return data
 
 
 class FacultadOut(BaseModel):
