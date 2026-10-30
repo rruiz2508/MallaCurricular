@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     database_url: str = ""
     # URL base del proyecto Supabase; de ella se derivan el JWKS y el emisor del JWT.
     supabase_url: str = ""
+    # Clave secreta del proyecto (secret key o service_role). Solo la usa el backend para
+    # la Admin API de Supabase Auth (alta de usuarios y cambio de contraseña). Nunca debe
+    # llegar al frontend ni subirse al repositorio.
+    supabase_service_role_key: str = ""
     # Orígenes autorizados por CORS, separados por coma.
     cors_origins: str = "http://localhost:5173"
 

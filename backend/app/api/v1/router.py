@@ -6,8 +6,23 @@ módulo nuevo (carreras, asignaturas, etc.) basta con crear su archivo e incluir
 
 from fastapi import APIRouter
 
-from app.api.v1 import facultades, me
+from app.api.v1 import (
+    asignaturas,
+    carreras,
+    facultades,
+    mallas,
+    me,
+    promociones,
+    roles,
+    usuarios,
+)
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(me.router)
 api_router.include_router(facultades.router)
+api_router.include_router(roles.router)
+api_router.include_router(usuarios.router)
+api_router.include_router(carreras.router)
+api_router.include_router(asignaturas.router)
+api_router.include_router(mallas.router)
+api_router.include_router(promociones.router)

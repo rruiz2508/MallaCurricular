@@ -144,6 +144,13 @@ async def get_current_user(
     if not row.activo:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario inactivo")
 
+    # Autoría: se registra el usuario en la transacción de la petición para que los triggers
+    # de auditoría de la base llenen created_by/updated_by. ``true`` = solo vale dentro de
+    # esta transacción (no se filtra a otras peticiones que reutilicen la conexión).
+    await conn.execute(
+        text("select set_config('app.current_user_id', :id, true)"), {"id": str(user_id)}
+    )
+
     # Roles activos del usuario y los permisos de cada uno. Los left join permiten que un
     # rol sin permisos igualmente aparezca en la lista de roles.
     rows = (
