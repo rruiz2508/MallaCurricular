@@ -39,6 +39,8 @@ class RolDisponible(RolRef):
 
 
 class UsuarioOut(BaseModel):
+    """Usuario con los roles que tiene asignados."""
+
     id: UUID
     email: str | None
     nombre: str
@@ -59,6 +61,7 @@ class UsuarioIn(Entrada):
     @field_validator("email")
     @classmethod
     def _minusculas(cls, valor: str) -> str:
+        """El correo se guarda en minúsculas (Supabase Auth también lo normaliza)."""
         return valor.lower()
 
 
@@ -74,10 +77,13 @@ class UsuarioUpdate(Entrada):
     @model_validator(mode="before")
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
+        """Ningún campo editable admite ``null``."""
         return rechazar_nulos(data, {"nombre", "apellido", "activo", "roles"})
 
 
 class PasswordIn(Entrada):
+    """Nueva contraseña de un usuario."""
+
     password: Password
 
 
@@ -95,6 +101,7 @@ _SELECT_USUARIO = """
 
 
 def _usuario(row: object) -> UsuarioOut:
+    """Convierte una fila de la consulta de usuarios en ``UsuarioOut``."""
     m = row._mapping  # type: ignore[attr-defined]
     return UsuarioOut(
         id=m["id"],
@@ -107,6 +114,7 @@ def _usuario(row: object) -> UsuarioOut:
 
 
 async def _obtener(conn: AsyncConnection, usuario_id: UUID) -> UsuarioOut:
+    """Devuelve el usuario con sus roles o responde 404 si no existe."""
     row = (
         await conn.execute(
             text(_SELECT_USUARIO + " where u.id = :id group by u.id"), {"id": usuario_id}

@@ -41,10 +41,13 @@ class PromocionUpdate(Entrada):
     @model_validator(mode="before")
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
+        """Ninguno de los campos editables admite ``null``."""
         return rechazar_nulos(data, {"malla_id", "anios_gracia"})
 
 
 class PromocionOut(BaseModel):
+    """Promoción con su malla y su vigencia, calculada por la base."""
+
     id: UUID
     carrera_id: UUID
     carrera_codigo: str
@@ -71,6 +74,7 @@ _SELECT = """
 
 
 async def _obtener(conn: AsyncConnection, promocion_id: UUID) -> PromocionOut:
+    """Devuelve la promoción o responde 404 si no existe."""
     row = (await conn.execute(text(_SELECT + " where p.id = :id"), {"id": promocion_id})).first()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Promoción no encontrada")

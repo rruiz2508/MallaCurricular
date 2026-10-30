@@ -50,6 +50,7 @@ class MallaUpdate(Entrada):
     @model_validator(mode="before")
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
+        """La resolución puede vaciarse con ``null``; el resto de los campos no."""
         return rechazar_nulos(data, {"nombre", "duracion_semestres", "horas_por_credito"})
 
 
@@ -63,6 +64,7 @@ class MallaAsignaturaIn(Entrada):
 
     @model_validator(mode="after")
     def _semestre_segun_tipo(self) -> "MallaAsignaturaIn":
+        """Las complementarias y el trabajo final van sin semestre; las demás, con semestre (espeja la restricción de la base)."""
         if (self.tipo in _SIN_SEMESTRE) != (self.semestre is None):
             raise ValueError(
                 "Las actividades complementarias y el trabajo final no llevan semestre; "
@@ -82,6 +84,7 @@ class MallaAsignaturaUpdate(Entrada):
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
         # El semestre sí puede quedar en null (al pasar a complementaria/trabajo final).
+        """El semestre puede quedar en ``null`` (al pasar a complementaria o trabajo final); el tipo no."""
         return rechazar_nulos(data, {"tipo"})
 
 
@@ -94,12 +97,15 @@ class RelacionIn(Entrada):
 
     @model_validator(mode="after")
     def _distintas(self) -> "RelacionIn":
+        """Una asignatura no puede requerirse a sí misma."""
         if self.asignatura_id == self.relacionada_id:
             raise ValueError("Una asignatura no puede requerirse a sí misma")
         return self
 
 
 class MallaOut(BaseModel):
+    """Una versión de la malla de una carrera, con sus contadores."""
+
     id: UUID
     carrera_id: UUID
     carrera_codigo: str
@@ -117,6 +123,8 @@ class MallaOut(BaseModel):
 
 
 class RelacionOut(BaseModel):
+    """Prerrequisito de una asignatura: la asignatura que se exige."""
+
     id: UUID
     relacionada_id: UUID
     codigo: str
@@ -125,6 +133,8 @@ class RelacionOut(BaseModel):
 
 
 class MallaAsignaturaOut(BaseModel):
+    """Asignatura dentro de una malla, con su semestre, créditos, horas y prerrequisitos."""
+
     asignatura_id: UUID
     codigo: str
     codigo_sistema: str | None
@@ -139,6 +149,8 @@ class MallaAsignaturaOut(BaseModel):
 
 
 class MallaDetalleOut(MallaOut):
+    """Malla con todas sus asignaturas, ordenadas por semestre."""
+
     asignaturas: list[MallaAsignaturaOut]
 
 
@@ -158,6 +170,7 @@ _SELECT = """
 
 
 async def _obtener(conn: AsyncConnection, malla_id: UUID) -> MallaOut:
+    """Devuelve la malla (sin su composición) o responde 404 si no existe."""
     row = (await conn.execute(text(_SELECT + " where m.id = :id"), {"id": malla_id})).first()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Malla no encontrada")

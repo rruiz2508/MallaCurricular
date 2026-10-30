@@ -189,6 +189,7 @@ def require_permission(codigo: str) -> Callable[..., Awaitable[CurrentUser]]:
     """
 
     async def checker(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+        """Deja pasar al usuario si tiene el permiso; si no, responde 403."""
         if codigo not in user.permisos:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail=f"Falta el permiso {codigo}"

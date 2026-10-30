@@ -56,6 +56,7 @@ class RolIn(Entrada):
     @field_validator("permisos")
     @classmethod
     def _normalizar(cls, valor: list[str]) -> list[str]:
+        """Quita espacios y duplicados de los códigos de permiso."""
         return _codigos_unicos(valor)
 
 
@@ -71,12 +72,14 @@ class RolUpdate(Entrada):
     @field_validator("permisos")
     @classmethod
     def _normalizar(cls, valor: list[str] | None) -> list[str] | None:
+        """Quita espacios y duplicados; ``None`` significa «no tocar los permisos»."""
         return None if valor is None else _codigos_unicos(valor)
 
     @model_validator(mode="before")
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
         # La descripción sí puede quedar en null (se borra); el resto no.
+        """La descripción puede vaciarse con ``null``; el resto de los campos no."""
         return rechazar_nulos(data, {"nombre", "activo", "permisos"})
 
 
@@ -93,10 +96,12 @@ _SELECT_ROL = """
 
 
 def _rol(row: object) -> RolOut:
+    """Convierte una fila de la consulta de roles en ``RolOut``."""
     return RolOut(**row._mapping)  # type: ignore[attr-defined]
 
 
 async def _obtener(conn: AsyncConnection, rol_id: UUID) -> RolOut:
+    """Devuelve el rol con sus permisos o responde 404 si no existe."""
     row = (
         await conn.execute(text(_SELECT_ROL + " where r.id = :id group by r.id"), {"id": rol_id})
     ).first()

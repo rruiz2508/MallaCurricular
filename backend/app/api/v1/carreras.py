@@ -46,10 +46,13 @@ class CarreraUpdate(Entrada):
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
         # El título y la duración sí pueden quedar vacíos (null); el resto no.
+        """El título y la duración pueden vaciarse con ``null``; el resto de los campos no."""
         return rechazar_nulos(data, {"facultad_id", "codigo", "nombre", "activo"})
 
 
 class CarreraOut(BaseModel):
+    """Carrera tal como se devuelve al cliente, con el nombre de su facultad."""
+
     id: UUID
     facultad_id: UUID
     facultad: str
@@ -69,6 +72,7 @@ _SELECT = """
 
 
 async def _obtener(conn: AsyncConnection, carrera_id: UUID) -> CarreraOut:
+    """Devuelve la carrera o responde 404 si no existe."""
     row = (await conn.execute(text(_SELECT + " where c.id = :id"), {"id": carrera_id})).first()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carrera no encontrada")

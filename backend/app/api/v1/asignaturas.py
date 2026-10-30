@@ -37,6 +37,7 @@ class AsignaturaIn(Entrada):
 
     @model_validator(mode="after")
     def _horas_coherentes(self) -> "AsignaturaIn":
+        """Las horas teóricas y prácticas no pueden superar la carga horaria total."""
         suma = (self.horas_teoricas or 0) + (self.horas_practicas or 0)
         if suma > self.carga_horaria_total:
             raise ValueError("Las horas teóricas y prácticas superan la carga horaria total")
@@ -58,10 +59,13 @@ class AsignaturaUpdate(Entrada):
     @model_validator(mode="before")
     @classmethod
     def _sin_nulos(cls, data: object) -> object:
+        """Rechaza ``null`` en los campos obligatorios; la descripción, el código de sistema y las horas sí pueden vaciarse."""
         return rechazar_nulos(data, {"codigo", "nombre", "carga_horaria_total", "estado"})
 
 
 class AsignaturaOut(BaseModel):
+    """Asignatura tal como se devuelve al cliente."""
+
     id: UUID
     codigo: str
     codigo_sistema: str | None
@@ -80,6 +84,7 @@ _COLUMNAS = (
 
 
 async def _obtener(conn: AsyncConnection, asignatura_id: UUID) -> AsignaturaOut:
+    """Devuelve la asignatura o responde 404 si no existe."""
     row = (
         await conn.execute(
             text(f"select {_COLUMNAS} from academico.asignatura where id = :id"),
@@ -188,22 +193,29 @@ async def eliminar(asignatura_id: UUID, conn: Conn) -> None:
 
 
 class EquivalenciaIn(Entrada):
+    """Datos para declarar dos asignaturas como equivalentes."""
+
     asignatura_id: UUID
     equivalente_id: UUID
     observacion: str | None = Field(default=None, max_length=500)
 
     @model_validator(mode="after")
     def _distintas(self) -> "EquivalenciaIn":
+        """Una asignatura no puede ser equivalente a sí misma."""
         if self.asignatura_id == self.equivalente_id:
             raise ValueError("Una asignatura no puede ser equivalente a sí misma")
         return self
 
 
 class EquivalenciaUpdate(Entrada):
+    """Datos para editar una equivalencia (solo su observación)."""
+
     observacion: str | None = Field(default=None, max_length=500)
 
 
 class EquivalenciaOut(BaseModel):
+    """Par de asignaturas equivalentes, con sus códigos y nombres."""
+
     asignatura_id: UUID
     asignatura_codigo: str
     asignatura_nombre: str
@@ -227,6 +239,7 @@ _PAR = "(e.asignatura_id, e.equivalente_id) = (least(cast(:a as uuid), cast(:b a
 
 
 async def _obtener_equivalencia(conn: AsyncConnection, a: UUID, b: UUID) -> EquivalenciaOut:
+    """Devuelve el par (en cualquier orden) o responde 404 si no existe."""
     row = (await conn.execute(text(_SELECT_EQ + f" where {_PAR}"), {"a": a, "b": b})).first()
     if row is None:
         raise HTTPException(
