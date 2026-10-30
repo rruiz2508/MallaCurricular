@@ -108,7 +108,7 @@ export default function Facultades() {
             <tbody>
               {items.map((f) => (
                 <tr key={f.id}>
-                  <td>{f.codigo}</td>
+                  <td className="mono">{f.codigo}</td>
                   <td>{f.nombre}</td>
                   <td>
                     <span className={`badge ${f.activo ? "ok" : "off"}`}>

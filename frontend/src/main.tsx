@@ -12,7 +12,11 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
+import { applyTheme, initialTheme } from "./lib/theme";
 import "./index.css";
+
+// Antes del primer render, para que la pantalla no parpadee con el tema equivocado.
+applyTheme(initialTheme());
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

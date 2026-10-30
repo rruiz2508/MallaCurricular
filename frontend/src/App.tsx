@@ -11,11 +11,20 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "./auth/AuthContext";
 import Layout from "./components/Layout";
+import Asignaturas from "./pages/Asignaturas";
+import Carreras from "./pages/Carreras";
+import Equivalencias from "./pages/Equivalencias";
 import Facultades from "./pages/Facultades";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import MallaDetalle from "./pages/MallaDetalle";
+import Mallas from "./pages/Mallas";
 import Placeholder from "./pages/Placeholder";
+import Prerrequisitos from "./pages/Prerrequisitos";
+import Promociones from "./pages/Promociones";
+import Roles from "./pages/Roles";
 import SectionPage from "./pages/SectionPage";
+import Usuarios from "./pages/Usuarios";
 import { sections } from "./modules";
 
 export default function App() {
@@ -54,6 +63,15 @@ export default function App() {
           <Route key={s.path} path={s.path} element={<SectionPage section={s} />} />
         ))}
         <Route path="/academico/facultades" element={<Facultades />} />
+        <Route path="/academico/carreras" element={<Carreras />} />
+        <Route path="/academico/asignaturas" element={<Asignaturas />} />
+        <Route path="/academico/mallas" element={<Mallas />} />
+        <Route path="/academico/mallas/:id" element={<MallaDetalle />} />
+        <Route path="/academico/promociones" element={<Promociones />} />
+        <Route path="/academico/equivalencias" element={<Equivalencias />} />
+        <Route path="/academico/correlatividades" element={<Prerrequisitos />} />
+        <Route path="/seguridad/usuarios" element={<Usuarios />} />
+        <Route path="/seguridad/roles" element={<Roles />} />
         {/* Los módulos aún no implementados comparten una página "en construcción".
             Al implementar uno, se marca `implemented: true` en modules.ts y se agrega
             su ruta explícita arriba. */}
