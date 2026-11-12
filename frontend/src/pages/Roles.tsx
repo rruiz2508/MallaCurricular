@@ -11,7 +11,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 
 interface Rol {
   id: string;
@@ -52,6 +54,7 @@ export default function Roles() {
   /** null = modal cerrado. */
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(roles);
 
   /** Pide roles y catálogo de permisos al backend. */
   const load = useCallback(async () => {
@@ -177,7 +180,7 @@ export default function Roles() {
               </tr>
             </thead>
             <tbody>
-              {roles.map((r) => (
+              {paginacion.filas.map((r) => (
                 <tr key={r.id}>
                   <td>
                     {r.nombre}{" "}
@@ -231,6 +234,7 @@ export default function Roles() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

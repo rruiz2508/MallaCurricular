@@ -10,7 +10,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 
 interface RolRef {
   id: string;
@@ -59,6 +61,7 @@ export default function Usuarios() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [passwordDraft, setPasswordDraft] = useState<PasswordDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(items);
 
   /** Pide usuarios y roles asignables al backend. */
   const load = useCallback(async () => {
@@ -184,7 +187,7 @@ export default function Usuarios() {
               </tr>
             </thead>
             <tbody>
-              {items.map((u) => (
+              {paginacion.filas.map((u) => (
                 <tr key={u.id}>
                   <td>{`${u.nombre} ${u.apellido}`.trim() || "—"}</td>
                   <td>{u.email}</td>
@@ -246,6 +249,7 @@ export default function Usuarios() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

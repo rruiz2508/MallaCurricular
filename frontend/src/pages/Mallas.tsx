@@ -10,7 +10,9 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import Modal from "../components/Modal";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import { estadoMallaBadge } from "../lib/types";
 import type { Malla, MallaDetalle } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
@@ -39,6 +41,7 @@ export default function Mallas() {
   const carreras = useLoad<Carrera>("/carreras", { optional: true });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(mallas.data);
 
   function open(next: Draft) {
     setFormError(null);
@@ -130,7 +133,7 @@ export default function Mallas() {
               </tr>
             </thead>
             <tbody>
-              {mallas.data.map((m) => {
+              {paginacion.filas.map((m) => {
                 const badge = estadoMallaBadge[m.estado];
                 return (
                   <tr key={m.id}>
@@ -188,6 +191,7 @@ export default function Mallas() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

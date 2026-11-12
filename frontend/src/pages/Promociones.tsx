@@ -10,7 +10,9 @@ import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import Modal from "../components/Modal";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import type { Malla } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
 
@@ -53,6 +55,7 @@ export default function Promociones() {
   const mallas = useLoad<Malla>("/mallas", { optional: true });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(promociones.data);
 
   function open(next: Draft) {
     setFormError(null);
@@ -143,7 +146,7 @@ export default function Promociones() {
               </tr>
             </thead>
             <tbody>
-              {promociones.data.map((p) => (
+              {paginacion.filas.map((p) => (
                 <tr key={p.id}>
                   <td>
                     <span className="mono">{p.carrera_codigo}</span>
@@ -202,6 +205,7 @@ export default function Promociones() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 
