@@ -7,7 +7,7 @@
  * debe estar en un semestre anterior, el semestre no puede superar la duración, etc.) las
  * aplica el backend; aquí solo se ofrecen opciones válidas y se muestran sus mensajes.
  */
-import { ArrowLeft, Archive, Copy, Pencil, Plus, Rocket, Trash2 } from "lucide-react";
+import { ArrowLeft, Archive, Copy, Download, Pencil, Plus, Rocket, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -67,6 +67,7 @@ export default function MallaDetalle() {
   const [materia, setMateria] = useState<MateriaDraft | null>(null);
   const [datos, setDatos] = useState<DatosDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -110,6 +111,19 @@ export default function MallaDetalle() {
   const badge = estadoMallaBadge[malla.estado];
   const semestres = Array.from({ length: malla.duracion_semestres }, (_, i) => i + 1);
   const enMalla = new Set(malla.asignaturas.map((a) => a.asignatura_id));
+
+  async function descargarPdf(detalle: Detalle) {
+    setGenerandoPdf(true);
+    setError(null);
+    try {
+      const { descargarPdfMalla } = await import("../lib/mallaPdf");
+      descargarPdfMalla(detalle);
+    } catch {
+      setError("No se pudo generar el PDF. Volvé a intentar.");
+    } finally {
+      setGenerandoPdf(false);
+    }
+  }
 
   /** Ejecuta una acción sobre la malla que devuelve su detalle actualizado. */
   async function accion(path: string, init: RequestInit, confirmacion?: string) {
@@ -294,6 +308,9 @@ export default function MallaDetalle() {
           </span>
         </div>
         <div className="inline-actions">
+          <button type="button" className="btn" disabled={generandoPdf} onClick={() => void descargarPdf(malla)}>
+            <Download size={16} aria-hidden="true" /> {generandoPdf ? "Generando PDF…" : "Descargar PDF"}
+          </button>
           {editable && (
             <button
               className="btn"
