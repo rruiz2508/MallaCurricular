@@ -148,9 +148,10 @@ export const sections: Section[] = [
       {
         path: "/reportes/malla",
         label: "Malla por carrera",
-        descripcion: "Vista de la malla vigente",
+        descripcion: "Plan de estudios por carrera y versión",
         icon: Table2,
         permiso: "mallas.leer",
+        implemented: true,
       },
       {
         path: "/reportes/promociones",
