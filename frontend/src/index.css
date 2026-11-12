@@ -460,6 +460,27 @@ a:focus-visible {
   overflow-x: auto;
 }
 
+.reporte-malla-filtro {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.reporte-malla-filtro select {
+  max-width: 100%;
+}
+
+.reporte-malla-semestres {
+  display: grid;
+  gap: 1rem;
+}
+
+.reporte-malla-tabla caption {
+  padding: 0.85rem 1.5rem;
+  text-align: left;
+  font-weight: 650;
+}
+
 .paginacion,
 .paginacion-controles {
   display: flex;
