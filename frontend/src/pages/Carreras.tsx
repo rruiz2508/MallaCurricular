@@ -10,7 +10,9 @@ import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import Modal from "../components/Modal";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import { toIntOrNull, useLoad } from "../lib/useLoad";
 
 interface Carrera {
@@ -48,6 +50,7 @@ export default function Carreras() {
   const facultades = useLoad<Facultad>("/facultades", { optional: true });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(carreras.data);
 
   function open(next: Draft) {
     setFormError(null);
@@ -126,7 +129,7 @@ export default function Carreras() {
               </tr>
             </thead>
             <tbody>
-              {carreras.data.map((c) => (
+              {paginacion.filas.map((c) => (
                 <tr key={c.id}>
                   <td className="mono">{c.codigo}</td>
                   <td>{c.nombre}</td>
@@ -176,6 +179,7 @@ export default function Carreras() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

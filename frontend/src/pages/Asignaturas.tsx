@@ -10,7 +10,9 @@ import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import Modal from "../components/Modal";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import { toIntOrNull, useLoad } from "../lib/useLoad";
 
 type Estado = "activa" | "inactiva" | "en_revision";
@@ -62,6 +64,7 @@ export default function Asignaturas() {
       [a.codigo, a.codigo_sistema ?? "", a.nombre].some((t) => t.toLowerCase().includes(q)),
     );
   }, [data, busqueda]);
+  const paginacion = usePaginacion(visibles);
 
   function open(next: Draft) {
     setFormError(null);
@@ -133,7 +136,10 @@ export default function Asignaturas() {
           <input
             placeholder="Buscar por código o nombre"
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              paginacion.reiniciar();
+            }}
           />
         </label>
         <span className="muted">
@@ -158,7 +164,7 @@ export default function Asignaturas() {
               </tr>
             </thead>
             <tbody>
-              {visibles.map((a) => (
+              {paginacion.filas.map((a) => (
                 <tr key={a.id}>
                   <td className="mono">{a.codigo}</td>
                   <td className="muted">{a.codigo_sistema ?? "—"}</td>
@@ -213,6 +219,7 @@ export default function Asignaturas() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

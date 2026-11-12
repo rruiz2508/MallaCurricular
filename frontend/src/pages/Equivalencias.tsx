@@ -10,7 +10,9 @@ import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import Modal from "../components/Modal";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import { useLoad } from "../lib/useLoad";
 
 interface Equivalencia {
@@ -44,6 +46,7 @@ export default function Equivalencias() {
   const asignaturas = useLoad<Asignatura>("/asignaturas", { optional: true });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(equivalencias.data);
 
   function open(next: Draft) {
     setFormError(null);
@@ -134,7 +137,7 @@ export default function Equivalencias() {
               </tr>
             </thead>
             <tbody>
-              {equivalencias.data.map((eq) => (
+              {paginacion.filas.map((eq) => (
                 <tr key={`${eq.asignatura_id}-${eq.equivalente_id}`}>
                   <td>
                     <span className="mono">{eq.asignatura_codigo}</span> · {eq.asignatura_nombre}
@@ -179,6 +182,7 @@ export default function Equivalencias() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

@@ -7,7 +7,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 import { estadoMallaBadge } from "../lib/types";
 import type { Malla, MallaDetalle } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
@@ -42,6 +44,7 @@ export default function Prerrequisitos() {
   }, [mallaId]);
 
   const filas = detalle?.asignaturas ?? [];
+  const paginacion = usePaginacion(filas);
 
   return (
     <>
@@ -50,7 +53,10 @@ export default function Prerrequisitos() {
       </div>
 
       <div className="toolbar">
-        <select value={mallaId} onChange={(e) => setMallaId(e.target.value)}>
+        <select value={mallaId} onChange={(e) => {
+          setMallaId(e.target.value);
+          paginacion.reiniciar();
+        }}>
           {mallas.data.map((m) => (
             <option key={m.id} value={m.id}>
               {m.carrera_codigo} · v{m.version} · {m.nombre} ({estadoMallaBadge[m.estado].texto})
@@ -74,7 +80,7 @@ export default function Prerrequisitos() {
               </tr>
             </thead>
             <tbody>
-              {filas.map((a) => (
+              {paginacion.filas.map((a) => (
                 <tr key={a.asignatura_id}>
                   <td>{a.semestre ?? "—"}</td>
                   <td>
@@ -104,6 +110,7 @@ export default function Prerrequisitos() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
     </>

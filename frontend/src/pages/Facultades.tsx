@@ -9,7 +9,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { useAuth } from "../auth/AuthContext";
+import Paginacion from "../components/Paginacion";
 import { api } from "../lib/api";
+import { usePaginacion } from "../lib/usePaginacion";
 
 interface Facultad {
   id: string;
@@ -32,6 +34,7 @@ export default function Facultades() {
   /** null = modal cerrado. */
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const paginacion = usePaginacion(items);
 
   /** Pide la lista de facultades al backend y actualiza la tabla. */
   const load = useCallback(async () => {
@@ -106,7 +109,7 @@ export default function Facultades() {
               </tr>
             </thead>
             <tbody>
-              {items.map((f) => (
+              {paginacion.filas.map((f) => (
                 <tr key={f.id}>
                   <td className="mono">{f.codigo}</td>
                   <td>{f.nombre}</td>
@@ -137,6 +140,7 @@ export default function Facultades() {
               )}
             </tbody>
           </table>
+          <Paginacion datos={paginacion} />
         </div>
       )}
 

@@ -460,6 +460,19 @@ a:focus-visible {
   overflow-x: auto;
 }
 
+.paginacion,
+.paginacion-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.paginacion {
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
