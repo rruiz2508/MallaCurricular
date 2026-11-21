@@ -108,6 +108,7 @@ Aplicar en orden las migraciones de `supabase/migrations/` desde el SQL Editor d
 4. `20261029211146_correlativa_como_prerrequisito.sql`
 5. `20261030120000_reporte_malla.sql`
 6. `20261030150000_auditoria.sql`
+7. `20261121180000_auditoria_alta_usuario.sql`
 
 Deben ejecutarse en Supabase porque usan `auth.users` y `auth.uid()`. El resultado son los esquemas `seguridad` (usuarios, roles y permisos) y `academico` (facultades, carreras, asignaturas, mallas, relaciones, equivalencias y promociones). La vista `academico.v_reporte_promocion` entrega el reporte de malla de una promoción (semestre, año lectivo, códigos, créditos, horas y prerrequisitos), como el de `Docs/Curriculum_Propuesto_2023 - LCI-SI_Ruiz_Robert.pdf`.
 
@@ -169,6 +170,17 @@ La aplicación queda en <http://localhost:5173>; Vite redirige `/api` al backend
 
 > No versionar `backend/.env` ni `frontend/.env.local`: están incluidos en `.gitignore`.
 
+### 6. Modo autónomo (sin servidor de desarrollo)
+
+Para usar el sistema como una aplicación única, sin Vite ni IDE, ejecute `iniciar.bat` (Windows) en la raíz del repositorio. La primera vez compila el frontend (`npm run build`), prepara el entorno de Python y, en cada arranque, levanta un solo proceso en <http://localhost:8000>: el backend sirve la API en `/api/v1` y, si existe `frontend/dist`, también la interfaz. Equivale a:
+
+```bash
+cd frontend && npm install && npm run build
+cd ../backend && uvicorn app.main:app --port 8000
+```
+
+Los archivos `backend/.env` y `frontend/.env.local` siguen siendo necesarios (la base y la autenticación están en Supabase). Para distribuirlo como `.exe` se puede empaquetar este modo con PyInstaller.
+
 ## API
 
 Todas las rutas de negocio cuelgan de `/api/v1` y requieren `Authorization: Bearer <access_token>`, salvo `/health`.
@@ -180,6 +192,7 @@ Todas las rutas de negocio cuelgan de `/api/v1` y requieren `Authorization: Bear
 | GET | `/api/v1/facultades` | `facultades.leer` | Lista de facultades. |
 | POST | `/api/v1/facultades` | `facultades.gestionar` | Crea una facultad (409 si el código o el nombre ya existen). |
 | PATCH | `/api/v1/facultades/{id}` | `facultades.gestionar` | Edición parcial; 400 sin cambios, 404 si no existe, 422 con valores inválidos. |
+| DELETE | `/api/v1/facultades/{id}` | `facultades.gestionar` | Baja física; 404 si no existe, 409 si tiene carreras. |
 | GET / POST | `/api/v1/carreras` | `carreras.leer` / `.gestionar` | Lista y alta de carreras. |
 | PATCH / DELETE | `/api/v1/carreras/{id}` | `carreras.gestionar` | Edición y baja (409 si tiene mallas o promociones). |
 | GET / POST | `/api/v1/asignaturas` | `asignaturas.leer` / `.gestionar` | Catálogo de asignaturas. |
@@ -252,6 +265,7 @@ El backend tiene pruebas de API, de validación de JWT y de los esquemas de entr
 ## Documentación
 
 - [Acta de constitución del proyecto](Docs/Acta_Constitucion_Gestion_Malla_Curricular.pdf)
+- [Manual de usuario](Docs/Manual_de_Usuario.md): también dentro de la aplicación con la tecla **F1**.
 - [Guía de rediseño de interfaz](Docs/guia_ui.md): paleta, modo claro/oscuro y componentes.
 - [Currículum propuesto 2023 de LCI-SI](<Docs/Curriculum_Propuesto_2023 - LCI-SI_Ruiz_Robert.pdf>): reporte de referencia que la estructura de datos debe poder producir.
 - Migraciones SQL: `supabase/migrations/`; datos de prueba: `supabase/seed/`.
