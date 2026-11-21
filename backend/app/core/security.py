@@ -33,6 +33,9 @@ from app.core.db import get_connection
 # controlamos nosotros el mensaje y el código (401) en get_current_user.
 bearer = HTTPBearer(auto_error=False)
 
+# Diferencia de reloj tolerada al validar las fechas del JWT (exp, iat, nbf).
+_LEEWAY_SEGUNDOS = 60
+
 
 @dataclass
 class CurrentUser:
@@ -84,12 +87,26 @@ def _decode_token(token: str) -> dict[str, object]:
     try:
         # La clave se elige según el "kid" de la cabecera del token.
         signing_key = _jwks_client().get_signing_key_from_jwt(token)
+    except jwt.PyJWKClientConnectionError as exc:
+        # No se pudo descargar el JWKS (red caída o lenta): no es culpa del token, así que
+        # no se responde 401 (que haría creer que la sesión es inválida) sino 503.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo verificar la sesión (servicio de autenticación no disponible)",
+        ) from exc
+    except jwt.PyJWTError as exc:
+        raise _unauthorized("Token inválido o vencido") from exc
+    try:
         return jwt.decode(
             token,
             signing_key.key,
             algorithms=["ES256", "RS256"],
             audience="authenticated",
             issuer=settings.jwt_issuer,
+            # Tolerancia de reloj: un token recién emitido falla con ``iat``/``nbf`` "en el
+            # futuro" si el reloj de esta máquina atrasa unos segundos respecto de Supabase
+            # (síntoma: 401 en el primer inicio de sesión que se resuelve al reintentar).
+            leeway=_LEEWAY_SEGUNDOS,
             # Sin estas reclamaciones el token no identifica a un usuario válido ni
             # caduca, así que no debe aceptarse.
             options={"require": ["exp", "sub"]},

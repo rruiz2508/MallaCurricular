@@ -79,7 +79,7 @@ def test_token_sin_usuario(jwks: None) -> None:
 
 def test_token_vencido(jwks: None) -> None:
     with pytest.raises(HTTPException) as exc:
-        security._decode_token(_token(_claims(exp=datetime.now(UTC) - timedelta(minutes=1))))
+        security._decode_token(_token(_claims(exp=datetime.now(UTC) - timedelta(minutes=5))))
     assert exc.value.status_code == 401
 
 
@@ -100,4 +100,30 @@ def test_jwks_sin_supabase_url_responde_503(monkeypatch: pytest.MonkeyPatch) -> 
     security._jwks_client.cache_clear()
     with pytest.raises(HTTPException) as exc:
         security._jwks_client()
+    assert exc.value.status_code == 503
+
+
+def test_token_con_reloj_levemente_adelantado(jwks: None) -> None:
+    """Un ``iat`` unos segundos en el futuro (reloj atrasado) no debe dar 401."""
+    claims = security._decode_token(_token(_claims(iat=datetime.now(UTC) + timedelta(seconds=30))))
+    assert claims["sub"] == _SUB
+
+
+def test_token_emitido_muy_en_el_futuro(jwks: None) -> None:
+    with pytest.raises(HTTPException) as exc:
+        security._decode_token(_token(_claims(iat=datetime.now(UTC) + timedelta(minutes=10))))
+    assert exc.value.status_code == 401
+
+
+def test_jwks_inaccesible_responde_503(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Si no se puede descargar el JWKS el problema es del servicio, no del token."""
+
+    class _JwksCaido:
+        def get_signing_key_from_jwt(self, _token: str) -> SimpleNamespace:
+            raise jwt.PyJWKClientConnectionError("sin red")
+
+    monkeypatch.setattr(security, "_jwks_client", lambda: _JwksCaido())
+    monkeypatch.setattr(security, "get_settings", lambda: _settings())
+    with pytest.raises(HTTPException) as exc:
+        security._decode_token(_token(_claims()))
     assert exc.value.status_code == 503

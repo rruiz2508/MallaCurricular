@@ -1,4 +1,4 @@
-"""Módulo de facultades: listado, alta y edición.
+"""Módulo de facultades: listado, alta, edición y baja.
 
 Es el módulo de referencia: los demás (carreras, asignaturas, etc.) siguen el mismo
 patrón de esquemas Pydantic + consultas SQL con parámetros + permisos por endpoint.
@@ -10,9 +10,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from app.api.v1.common import traducir_error
 from app.core.db import get_connection
 from app.core.security import require_permission
 
@@ -149,3 +150,33 @@ async def actualizar(facultad_id: UUID, data: FacultadUpdate, conn: Conn) -> Fac
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facultad no encontrada")
     return FacultadOut(**row._mapping)
+
+
+@router.delete(
+    "/{facultad_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("facultades.gestionar"))],
+)
+async def eliminar(facultad_id: UUID, conn: Conn) -> None:
+    """Elimina una facultad. Requiere ``facultades.gestionar``.
+
+    Responde 404 si no existe y 409 si tiene carreras asociadas (en ese caso conviene
+    desactivarla en lugar de borrarla).
+    """
+    existe = (
+        await conn.execute(
+            text("select 1 from academico.facultad where id = :id"), {"id": facultad_id}
+        )
+    ).first()
+    if existe is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facultad no encontrada")
+    try:
+        await conn.execute(
+            text("delete from academico.facultad where id = :id"), {"id": facultad_id}
+        )
+    except DBAPIError as exc:
+        traducir_error(
+            exc,
+            referencia="La facultad tiene carreras asociadas; desactívela en su lugar",
+            referencia_status=status.HTTP_409_CONFLICT,
+        )

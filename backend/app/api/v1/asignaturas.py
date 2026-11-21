@@ -152,7 +152,17 @@ async def actualizar(asignatura_id: UUID, data: AsignaturaUpdate, conn: Conn) ->
     cambios = data.model_dump(exclude_unset=True)
     if not cambios:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sin cambios")
-    await _obtener(conn, asignatura_id)  # 404 temprano
+    actual = await _obtener(conn, asignatura_id)  # 404 temprano
+    # La coherencia de horas depende también de los valores ya guardados: se evalúa con el
+    # resultado de aplicar los cambios (el esquema de entrada solo ve lo que se envía).
+    total = cambios.get("carga_horaria_total", actual.carga_horaria_total)
+    teoricas = cambios.get("horas_teoricas", actual.horas_teoricas)
+    practicas = cambios.get("horas_practicas", actual.horas_practicas)
+    if (teoricas or 0) + (practicas or 0) > total:
+        raise HTTPException(
+            status_code=422,
+            detail="Las horas teóricas y prácticas superan la carga horaria total",
+        )
     # Los nombres de columna salen del esquema Pydantic, nunca del cliente.
     asignaciones = ", ".join(f"{col} = :{col}" for col in cambios)
     try:
