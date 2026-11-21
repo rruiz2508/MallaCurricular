@@ -21,8 +21,10 @@ import MallaDetalle from "./pages/MallaDetalle";
 import Mallas from "./pages/Mallas";
 import Placeholder from "./pages/Placeholder";
 import Prerrequisitos from "./pages/Prerrequisitos";
+import Ayuda from "./pages/Ayuda";
 import Promociones from "./pages/Promociones";
 import ReporteMalla from "./pages/ReporteMalla";
+import ReporteVigencia from "./pages/ReporteVigencia";
 import Roles from "./pages/Roles";
 import SectionPage from "./pages/SectionPage";
 import Usuarios from "./pages/Usuarios";
@@ -74,6 +76,8 @@ export default function App() {
         <Route path="/seguridad/usuarios" element={<Usuarios />} />
         <Route path="/seguridad/roles" element={<Roles />} />
         <Route path="/reportes/malla" element={<ReporteMalla />} />
+        <Route path="/reportes/promociones" element={<ReporteVigencia />} />
+        <Route path="/ayuda" element={<Ayuda />} />
         {/* Los módulos aún no implementados comparten una página "en construcción".
             Al implementar uno, se marca `implemented: true` en modules.ts y se agrega
             su ruta explícita arriba. */}

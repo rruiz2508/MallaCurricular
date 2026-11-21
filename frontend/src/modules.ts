@@ -159,6 +159,7 @@ export const sections: Section[] = [
         descripcion: "Promociones y malla aplicable",
         icon: Users,
         permiso: "promociones.leer",
+        implemented: true,
       },
     ],
   },

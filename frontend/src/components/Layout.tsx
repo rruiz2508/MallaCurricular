@@ -3,9 +3,9 @@
  * cabecera con el selector de tema y el usuario arriba. El contenido de cada página se dibuja
  * en el `<Outlet />` (lo decide la ruta activa).
  */
-import { LogOut, Menu, Moon, Sun } from "lucide-react";
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Info, LogOut, Menu, Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../lib/theme";
@@ -18,6 +18,20 @@ export default function Layout() {
   // panel superpuesto. Son dos estados separados porque se comportan distinto.
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // F1 abre el Manual de Usuario en la sección que corresponde a la pantalla actual
+  // (requisito F1 del Acta). preventDefault evita que el navegador abra su propia ayuda.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "F1") return;
+      event.preventDefault();
+      navigate(`/ayuda?desde=${encodeURIComponent(pathname)}`);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate, pathname]);
 
   // Solo se listan las secciones donde el usuario puede ver al menos un módulo.
   const visibleSections = sections.filter((s) => s.tiles.some((t) => can(t.permiso)));
@@ -73,6 +87,14 @@ export default function Layout() {
             onClick={toggleTheme}
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
+            className="icon-btn"
+            aria-label="Ayuda (F1)"
+            title="Manual de usuario (F1)"
+            onClick={() => navigate(`/ayuda?desde=${encodeURIComponent(pathname)}`)}
+          >
+            <Info size={18} />
           </button>
           <span className="user-name">{fullName}</span>
           {/* Al pasar el cursor sobre el avatar se ven los roles del usuario */}

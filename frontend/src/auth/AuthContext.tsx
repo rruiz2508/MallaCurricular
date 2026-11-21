@@ -13,7 +13,7 @@ import type { Session } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { supabase } from "../lib/supabase";
 
 /** Perfil del usuario tal como lo devuelve el backend en `/me`. */
@@ -84,7 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // petición estaba en vuelo (cambio de usuario o desmontaje).
     let cancelled = false;
     setLoading(true);
-    api<Me>("/me")
+    // Justo después de iniciar sesión el primer /me puede recibir un 401 transitorio (reloj
+    // desfasado, JWKS aún sin descargar): se reintenta una vez antes de mostrar el error.
+    const pedirPerfil = () =>
+      api<Me>("/me").catch(async (error: unknown) => {
+        if (!(error instanceof ApiError) || error.status !== 401) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (cancelled) throw error;
+        return api<Me>("/me");
+      });
+    pedirPerfil()
       .then((result) => {
         if (cancelled) return;
         setMe(result);

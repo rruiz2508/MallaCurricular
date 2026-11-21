@@ -1,10 +1,10 @@
 /**
- * Módulo de facultades: tabla con alta y edición mediante una ventana modal.
+ * Módulo de facultades: tabla con alta, edición y baja (esta última solo si no tiene carreras).
  *
  * Es el módulo de referencia: los demás (carreras, asignaturas, etc.) pueden seguir el
  * mismo patrón de cargar → listar → editar en modal → recargar.
  */
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
@@ -80,6 +80,17 @@ export default function Facultades() {
     }
   }
 
+  /** Elimina la facultad; el backend responde 409 si todavía tiene carreras. */
+  async function remove(f: Facultad) {
+    if (!window.confirm(`¿Eliminar la facultad "${f.nombre}"?`)) return;
+    try {
+      await api(`/facultades/${f.id}`, { method: "DELETE" });
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <>
       <div className="page-head">
@@ -126,6 +137,13 @@ export default function Facultades() {
                         onClick={() => open({ ...f })}
                       >
                         <Pencil size={16} />
+                      </button>
+                      <button
+                        className="icon-btn"
+                        aria-label="Eliminar"
+                        onClick={() => void remove(f)}
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   )}
